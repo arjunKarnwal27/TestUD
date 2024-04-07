@@ -65,7 +65,7 @@ zMin = int(min(zCords))
 print('hi')
 
 class Sphere:
-  def __init__(self, x,y,z):
+  def __init__(self,x,y,z):
     self.x = x
     self.y = y
     self.z = z
@@ -77,7 +77,67 @@ for i in range(0,len(cs[63].ContourSequence)):
     zzzList.append(cs[63].ContourSequence[i].ContourData[2])
 
 for a in range(xMin+20,xMax-20):
-    for b in range(yMin+20,yMax-20):
+    for b in range(yMin+20,yMax-20): # change to shrink?
         for c in range(zMin+20,zMax-20):
-         s1 = Sphere(x,y,z)
+         s1 = Sphere(a,b,c)
          potList.append(s1)
+
+
+def getDist(pt1,pt2):
+   return math.sqrt((pt1.x-pt2.x)**2 + (pt1.y-pt2.y)**2 + (pt1.z-pt2.z)**2)
+   
+
+#print(getDist(potList[1],potList[200000]))
+
+def changePotList(pt, oldPotList): #update total points list, based on point just added
+   newPotList = []
+   for i in range(0,len(oldPotList)):
+      dist = getDist(pt,oldPotList[i])
+      print(dist)
+      if(dist > 39): # 40 mm (4 cm) from center to center
+         newPotList.append(oldPotList[i])
+   return newPotList
+    
+#nList = changePotList(potList[1],potList)
+#print(len(nList))
+
+
+for target in potList:
+    z= target.z
+    minZindex = 0
+    minDiff = abs(zzzList[0]-z)
+    for a in range(1,len(zzzList)):
+        if(abs(z-zzzList[a]) < minDiff):
+            minDiff = abs(z-zzzList[a])
+            minZindex = a # min distance is the ath contour layer
+    #
+    xCords2DXY = np.array([])
+    yCords2DXY = np.array([])
+    contourData3 = cs[arj_index].ContourSequence[minZindex].ContourData
+    for x in range(0, len(contourData3),3):
+        xCords2DXY = np.append(xCords2DXY, contourData3[x])
+    for y in range(1, len(contourData3),3):
+        yCords2DXY = np.append(yCords2DXY, contourData3[y])
+    # 
+    bPointsXY = []
+    for i in range(0,len(xCords2DXY)):
+        bPoint = [xCords2DXY[i],yCords2DXY[i]]
+        bPointsXY.append(bPoint)
+    
+    xy_path = mplPath.Path(bPointsXY)
+    
+    # distance to edge
+    # how far from wall? --> TD: create new contour layer via interpolation 
+    nm = 2 # negative margin type
+    closeToWall = False
+    for e in range(0,len(xCords2DXY)):
+        if(math.sqrt(((target.x-xCords2DXY[e])**2 + (target.y-yCords2DXY[e])**2)) < nm): # change to find dist to centroid?
+            closeToWall = True
+    newPotList1 = []
+
+    center = [target.x,target.y]
+    if((xy_path.contains_point(center) == True) and closeToWall == False):
+        print('1.0')
+        newPotList1.append(target)
+
+print(len(newPotList1)) # yea ok doesn't work at all
